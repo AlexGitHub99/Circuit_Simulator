@@ -57,20 +57,20 @@ public class Wire extends CircuitElement {
 		}
 		if(shape == "T") {
 			if(rotation == UP) {
+				g.drawLine(x + size/2, y, x + size/2, y + size);
+				g.drawLine(x + size/2, y + size/2, x, y + size/2);
+			}
+			if(rotation == RIGHT) {
 				g.drawLine(x, y + size/2, x + size, y + size/2);
 				g.drawLine(x + size/2, y + size/2, x + size/2, y);
 			}
-			if(rotation == RIGHT) {
+			if(rotation == DOWN) {
 				g.drawLine(x + size/2, y, x + size/2, y + size);
 				g.drawLine(x + size/2, y + size/2, x + size, y + size/2);
 			}
-			if(rotation == DOWN) {
+			if(rotation == LEFT) {
 				g.drawLine(x, y + size/2, x + size, y + size/2);
 				g.drawLine(x + size/2, y + size/2, x + size/2, y + size);
-			}
-			if(rotation == LEFT) {
-				g.drawLine(x + size/2, y, x + size/2, y + size);
-				g.drawLine(x + size/2, y + size/2, x, y + size/2);
 			}
 		}
 	}

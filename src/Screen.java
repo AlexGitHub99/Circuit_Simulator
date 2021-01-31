@@ -22,6 +22,17 @@ public class Screen extends JPanel {
 	public void paint(Graphics g) {
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, width, height);
+		
+		g.setColor(Color.getHSBColor(0.0f, 0.0f, 0.90f));
+		for(int i = 0; i < zoom; i++) {
+			g.drawLine(i*width/zoom, 0, i*width/zoom, height);
+		}
+		
+		for(int i = 0; i < Math.floor((double)height/(double)width*zoom); i++) {
+			g.drawLine(0, i*width/zoom, width, i*width/zoom);
+
+		}
+		
 		g.setColor(Color.BLACK);
 		for(int i = 0; i < zoom; i++) {
 			for(int j = 0; j < Math.ceil((double)height/(double)width*zoom); j++) {

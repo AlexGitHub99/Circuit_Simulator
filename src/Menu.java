@@ -8,8 +8,9 @@ public class Menu extends JPanel {
 	int height;
 	int x;
 	int y;
+	int[] selXY;
 	int UP = 0;
-	int X_DIMENSION = 3;
+	int X_DIMENSION = 4;
 	int Y_DIMENSION = 2;
 	
 	CircuitElement[][] grid = new CircuitElement[X_DIMENSION][Y_DIMENSION];
@@ -19,17 +20,20 @@ public class Menu extends JPanel {
 		width = height/Y_DIMENSION*X_DIMENSION;
 		x = newXMiddle - width/2;
 		y = newY;
+		selXY = null;
 		grid[0][0] = new Wire("line", UP);
 		grid[1][0] = new Wire("L", UP);
 		grid[2][0] = new Wire("T", UP);
-		grid[0][1] = new Battery(UP);
+		grid[3][0] = new Battery(87.4, UP);
+		grid[0][1] = new Resistor(3, UP);
+		grid[1][1] = new Ammeter(UP);
 	}
 	
 	public void customPaint(Graphics g) {
 		g.setColor(Color.getHSBColor(0, 0, (float) 0.95));
 		g.fillRect(x, y, width, height);
 		
-		g.setColor(Color.getHSBColor(0, 0, (float) 0.40));
+		g.setColor(Color.RED);
 		for(int i = 0; i < grid.length; i++) {
 			g.drawLine(x + i*(width/grid.length), y, x + i*(width/grid.length), y + height);
 		}
@@ -40,11 +44,18 @@ public class Menu extends JPanel {
 		}
 		g.drawLine(x, y + height, x + width, y + height);
 		
+		int size = width/grid.length;
 		for(int i = 0; i < grid.length; i++) {
 			for(int j = 0; j < grid[0].length; j++) {
 				if(grid[i][j] != null) {
 					g.setColor(Color.BLACK);
-					grid[i][j].customPaint(g, x + i*(width/grid.length), y + j*(height/grid[0].length), width/grid.length);
+					grid[i][j].customPaint(g, x + i*(width/grid.length), y + j*(height/grid[0].length), size);
+					if(selXY != null) {
+						if(selXY[0] == i && selXY[1] == j) {
+							g.setColor(Color.GRAY);
+							g.fillOval(x + i*(width/grid.length) + size/12, y + j*(height/grid[0].length) + size/12, size/12, size/12);
+						}
+					}
 				}
 			}
 		}
@@ -56,6 +67,14 @@ public class Menu extends JPanel {
 	
 	public void setGrid(CircuitElement[][] newGrid) {
 		grid = newGrid;
+	}
+	
+	public void setSelected(int selX, int selY) {
+		if(selXY == null) {
+			selXY = new int[2];
+		}
+		selXY[0] = selX;
+		selXY[1] = selY;
 	}
 	
 	public int getWidth() {

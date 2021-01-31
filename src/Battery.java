@@ -2,13 +2,24 @@ import java.awt.Graphics;
 
 public class Battery extends CircuitElement {
 	
-	public Battery(int newRotation) {
+	double voltage;
+	
+	public Battery(double newVoltage, int newRotation) {
 		type = "battery";
 		rotation = newRotation;
+		voltage = newVoltage;
 	}
 	
 	public Battery() {
 		type = "battery";
+	}
+	
+	public void setVoltage(int newVoltage) {
+		voltage = newVoltage;
+	}
+	
+	public double getVoltage() {
+		return voltage;
 	}
 	
 	public void customPaint(Graphics g, int x, int y, int size) {
@@ -20,7 +31,7 @@ public class Battery extends CircuitElement {
 		}
 		if(rotation == RIGHT) {
 			g.drawLine(x , y + size/2, x + size*2/5, y + size/2);
-			g.drawLine(x + size*2/5, y + size/2, x + size, y + size/2);
+			g.drawLine(x + size*3/5, y + size/2, x + size, y + size/2);
 			g.drawLine(x + size*2/5, y + size*2/5, x + size*2/5, y + size*3/5);
 			g.drawLine(x + size*3/5, y + size/3, x + size*3/5, y + size*2/3);
 		}
@@ -31,10 +42,10 @@ public class Battery extends CircuitElement {
 			g.drawLine(x + size/3, y + size*3/5, x + size*2/3, y + size*3/5);
 		}
 		if(rotation == LEFT) {
-			g.drawLine(x,y,x,y);
-			g.drawLine(x,y,x,y);
-			g.drawLine(x,y,x,y);
-			g.drawLine(x,y,x,y);
+			g.drawLine(x , y + size/2, x + size*2/5, y + size/2);
+			g.drawLine(x + size*3/5, y + size/2, x + size, y + size/2);
+			g.drawLine(x + size*2/5, y + size/3, x + size*2/5, y + size*2/3);
+			g.drawLine(x + size*3/5, y + size*2/5, x + size*3/5, y + size*3/5);
 		}
 	}
 }
