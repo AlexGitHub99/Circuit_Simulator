@@ -24,7 +24,7 @@ public class Menu extends JPanel {
 		grid[0][0] = new Wire("line", UP);
 		grid[1][0] = new Wire("L", UP);
 		grid[2][0] = new Wire("T", UP);
-		grid[3][0] = new Battery(87.4, UP);
+		grid[3][0] = new Battery(10, UP);
 		grid[0][1] = new Resistor(3, UP);
 		grid[1][1] = new Ammeter(UP);
 	}
