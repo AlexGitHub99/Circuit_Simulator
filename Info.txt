@@ -1,0 +1,11 @@
+Circuit Simulator
+
+Left Mouse Button - select items from menu and place
+Right Mouse Button - edit resistance and voltage
+"R" - rotate component
+"-" - zoom out
+"+" - zoom in
+
+Notice: Circuit simulator can find
+resistance and current for almost any
+ONE BATTERY circuit

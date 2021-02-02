@@ -1,4 +1,5 @@
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -9,11 +10,15 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 public class Main implements MouseListener, KeyListener, ActionListener {
@@ -27,7 +32,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 	private static final int HEIGHT = 800;
 	private static final int MENU_MIDDLE_X = WIDTH/2;
 	private static final int MENU_HEIGHT = 200;
-	private static final int INFO_WIDTH = 200;
+	private static final int INFO_WIDTH = 300;
 	private static final int VARIABLE_HEIGHT = 50;
 	private static final int GRID_WIDTH = 100;
 	private static final int GRID_HEIGHT = 100;
@@ -39,6 +44,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 	JTextField textField = new JTextField();
 	JLabel variable = new JLabel();
 	JButton setValueButton = new JButton();
+	JTextArea textArea = new JTextArea();
 	CircuitElement selected;
 	CircuitElement editing;
 	CircuitElement[][] grid = new CircuitElement[GRID_WIDTH][GRID_HEIGHT]; //will store wires and circuit components
@@ -51,13 +57,29 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		info.setLayout(new GridLayout(2, 1));
 		info.setPreferredSize(new Dimension(INFO_WIDTH, VARIABLE_HEIGHT));
 		variableEntry.setLayout(null);
+		variableEntry.setBackground(Color.RED);
 		textField.setBounds(INFO_WIDTH/2, 0, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
 		variable.setBounds(0, 0, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
 		setValueButton.setBounds(INFO_WIDTH/2, VARIABLE_HEIGHT/2, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
+		String text = "";
+		try {
+			File textFile = new File("info.txt");
+			Scanner scanner = new Scanner(textFile);
+			while(scanner.hasNextLine()) {
+				text += scanner.nextLine() + '\n';
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		textArea.setText(text);
+		textArea.setEditable(false);
 		variableEntry.add(textField);
 		variableEntry.add(variable);
 		variableEntry.add(setValueButton);
+		info.add(textArea);
 		info.add(variableEntry);
+		
 		frame.add(screen, BorderLayout.CENTER);
 		frame.add(info, BorderLayout.EAST);
 		variable.setText("Test");
@@ -685,6 +707,12 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				selected.setRotation(newRotation);
 				screen.repaint();
 			}
+		} else if(e.getKeyCode() == KeyEvent.VK_EQUALS) {
+			screen.setZoom(screen.getZoom() - 1);
+			screen.repaint();
+		} else if(e.getKeyCode() == KeyEvent.VK_MINUS) {
+			screen.setZoom(screen.getZoom() + 1);
+			screen.repaint();
 		}
 		
 	}

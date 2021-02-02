@@ -49,7 +49,7 @@ public class Menu extends JPanel {
 			for(int j = 0; j < grid[0].length; j++) {
 				if(grid[i][j] != null) {
 					g.setColor(Color.BLACK);
-					grid[i][j].customPaint(g, x + i*(width/grid.length), y + j*(height/grid[0].length), size);
+					grid[i][j].customPaint(g, x + i*(width/grid.length) + 10, y + j*(height/grid[0].length) + 10, size - 20);
 					if(selXY != null) {
 						if(selXY[0] == i && selXY[1] == j) {
 							g.setColor(Color.GRAY);
