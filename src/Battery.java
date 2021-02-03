@@ -1,6 +1,5 @@
 import java.awt.Font;
 import java.awt.Graphics;
-import java.text.AttributedString;
 
 public class Battery extends CircuitElement {
 	

@@ -4,6 +4,10 @@ import java.awt.Graphics;
 import javax.swing.JPanel;
 
 public class Screen extends JPanel {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	int zoom;
 	int width;
 	int height;

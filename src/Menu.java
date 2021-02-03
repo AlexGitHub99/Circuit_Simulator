@@ -13,6 +13,8 @@ public class Menu extends JPanel {
 	int UP = 0;
 	int X_DIMENSION = 4;
 	int Y_DIMENSION = 2;
+	int DELETE_X = 3;
+	int DELETE_Y = 1;
 	
 	CircuitElement[][] grid = new CircuitElement[X_DIMENSION][Y_DIMENSION];
 	
@@ -28,6 +30,7 @@ public class Menu extends JPanel {
 		grid[3][0] = new Battery(10, UP);
 		grid[0][1] = new Resistor(3, UP);
 		grid[1][1] = new Ammeter(UP);
+		grid[2][1] = new Voltmeter(UP);
 	}
 	
 	public void customPaint(Graphics g) {
@@ -66,13 +69,13 @@ public class Menu extends JPanel {
 		Font prevFont = g.getFont();
 		g.setFont(new Font(g.getFont().getFamily(), Font.PLAIN, size));
 		g.setColor(Color.RED);
-		g.drawString("X", x + 2*(width/grid.length) + 15, y + (height/grid[0].length) + size - 15);
+		g.drawString("X", x + DELETE_X*(width/grid.length) + 15, y + DELETE_Y*(height/grid[0].length) + size - 15);
 		g.setFont(prevFont);
 		g.setColor(Color.BLACK);
 		if(selXY != null) {
-			if(selXY[0] == 2 && selXY[1] == 1) {
+			if(selXY[0] == DELETE_X && selXY[1] == DELETE_Y) {
 				g.setColor(Color.GRAY);
-				g.fillOval(x + 2*(width/grid.length) + size/12, y + 1*(height/grid[0].length) + size/12, size/12, size/12);
+				g.fillOval(x + DELETE_X*(width/grid.length) + size/12, y + DELETE_Y*(height/grid[0].length) + size/12, size/12, size/12);
 			}
 		}
 	}

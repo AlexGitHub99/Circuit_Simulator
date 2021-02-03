@@ -2,7 +2,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -68,6 +67,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 			while(scanner.hasNextLine()) {
 				text += scanner.nextLine() + '\n';
 			}
+			scanner.close();
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -129,7 +129,6 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		if(grid[x][y].getType() != "battery") {
 			return;
 		}
-		System.out.println("Battery update");
 		Battery battery = (Battery)grid[x][y];
 		if(battery.getRotation() == UP || battery.getRotation() == DOWN) {
 			double resistance = calcResistance(x, y, x, y, UP);
@@ -139,6 +138,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 			double current = battery.getVoltage()/resistance;
 			
 			updateAmmeters(x, y, x, y, UP, current);
+			updateVoltmeters(x, y, x, y, UP, battery.getVoltage(), current);
 		} else { //rotation is RIGHT or LEFT
 			double resistance = calcResistance(x, y, x, y, RIGHT);
 			if(resistance == -1) {
@@ -146,6 +146,92 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 			}
 			double current = battery.getVoltage()/resistance;
 			updateAmmeters(x, y, x, y, RIGHT, current);
+			updateVoltmeters(x, y, x, y, RIGHT, battery.getVoltage(), current);
+		}
+	}
+	
+	public void updateVoltmeters(int startX, int startY, int endX, int endY, int startDirection, double voltage, double current) {
+		if(grid[startX][startY].getType() == "voltmeter") {
+			((Voltmeter)grid[startX][startY]).setVoltage(voltage);
+		}
+		
+		int[] xy = grid[startX][startY].getConnections()[startDirection];
+		
+		int direction = startDirection;
+		while(true) {
+			if(xy[0] == endX && xy[1] == endY) { //reached end coordinates
+				break;
+			}
+			
+			if(grid[xy[0]][xy[1]].getType() == "voltmeter") {
+				((Voltmeter)grid[xy[0]][xy[1]]).setVoltage(voltage);
+			}
+			
+			int[][] connections = grid[xy[0]][xy[1]].getConnections();
+			
+			boolean findNext = true;
+			if(grid[xy[0]][xy[1]].getType() == "wire") {
+				if(((Wire)grid[xy[0]][xy[1]]).getShape() == "T") { //found junction
+					int[] junctionExits = getTExits(xy[0], xy[1], reverseDir(direction));
+					
+					if(junctionExits == null) {
+						return;
+					}
+					
+					int[] endJunction = findJunction(null, xy[0], xy[1], xy[0], xy[1], endX, endY, junctionExits[0]);
+					if(endJunction == null) {
+						return;
+					}
+					
+					double firstSec = calcResistance(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[0]);
+					double secondSec = calcResistance(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[1]);
+					if(firstSec == -1 || secondSec == -1) {
+						return;
+					}
+					
+					double nextVoltage = voltage;
+					double resistance;
+					double firstSecCurrent;
+					double secondSecCurrent;
+					if(firstSec == 0 || secondSec == 0) {
+						firstSecCurrent = current;
+						secondSecCurrent = current;
+						nextVoltage = 0;
+					} else {
+						if(firstSec == Double.POSITIVE_INFINITY && secondSec == Double.POSITIVE_INFINITY) {
+							firstSecCurrent = 0;
+							secondSecCurrent = 0;
+						} else {
+							resistance = 1/(1/firstSec + 1/secondSec);
+							nextVoltage = current*resistance;
+							firstSecCurrent = voltage/firstSec;
+							secondSecCurrent = voltage/secondSec;
+						}
+						
+					}
+					updateVoltmeters(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[0], nextVoltage, firstSecCurrent);
+					updateVoltmeters(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[1], nextVoltage, secondSecCurrent);
+					xy = grid[endJunction[0]][endJunction[1]].getConnections()[endJunction[2]];
+					findNext = false;
+					
+					direction = endJunction[2];
+				}
+			}
+			
+			if(findNext == true) {
+				for(int i = 0; i < 4; i++) {
+					if(connections[i] != null) {
+						if(i != reverseDir(direction)) {
+							xy = connections[i];
+							direction = i;
+							break;
+						} 
+					}
+					if(i == 3) { //no where left to go
+						return;
+					}
+				}
+			}
 		}
 	}
 	
@@ -242,12 +328,20 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 			}
 		}
 		
+		if(grid[startX][startY].getType() == "voltmeter") {
+			resistance = Double.POSITIVE_INFINITY;
+		}
+		
 		int[] xy = grid[startX][startY].getConnections()[startDirection];
 		
 		int direction = startDirection;
 		while(true) {
 			if(grid[xy[0]][xy[1]].getType() == "resistor") { //add resistance
 				resistance += ((Resistor)grid[xy[0]][xy[1]]).getResistance();
+			}
+			
+			if(grid[xy[0]][xy[1]].getType() == "voltmeter") {
+				resistance = Double.POSITIVE_INFINITY;
 			}
 			
 			if(xy[0] == endX && xy[1] == endY) { //reached end coordinates
@@ -279,6 +373,8 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 					}
 					if(firstSec == 0 || secondSec == 0) {
 						resistance += 0;
+					} else if(firstSec == Double.POSITIVE_INFINITY && secondSec == Double.POSITIVE_INFINITY) {
+						resistance = Double.POSITIVE_INFINITY;
 					} else {
 						resistance += 1/(1/firstSec + 1/secondSec);
 					}
@@ -570,6 +666,10 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 						Ammeter selectedAmmeter = (Ammeter)selected;
 						Ammeter ammeter = new Ammeter(selectedAmmeter.getRotation());
 						grid[gridX][gridY] = ammeter;
+					} else if(selected.getType() == "voltmeter") {
+						Voltmeter selectedVoltmeter = (Voltmeter)selected;
+						Voltmeter voltmeter = new Voltmeter(selectedVoltmeter.getRotation());
+						grid[gridX][gridY] = voltmeter;
 					}
 				} else {
 					grid[gridX][gridY] = null;
