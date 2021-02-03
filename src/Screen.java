@@ -28,7 +28,7 @@ public class Screen extends JPanel {
 			g.drawLine(i*width/zoom, 0, i*width/zoom, height);
 		}
 		
-		for(int i = 0; i < Math.floor((double)height/(double)width*zoom); i++) {
+		for(int i = 0; i < Math.ceil((double)height/(double)width*zoom); i++) {
 			g.drawLine(0, i*width/zoom, width, i*width/zoom);
 
 		}

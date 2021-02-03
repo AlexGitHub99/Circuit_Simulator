@@ -168,6 +168,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 			
 			int[][] connections = grid[xy[0]][xy[1]].getConnections();
 			
+			boolean findNext = true;
 			if(grid[xy[0]][xy[1]].getType() == "wire") {
 				if(((Wire)grid[xy[0]][xy[1]]).getShape() == "T") { //found junction
 					int[] junctionExits = getTExits(xy[0], xy[1], reverseDir(direction));
@@ -202,29 +203,24 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 					updateAmmeters(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[0], firstSecCurrent);
 					updateAmmeters(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[1], secondSecCurrent);
 					xy = grid[endJunction[0]][endJunction[1]].getConnections()[endJunction[2]];
-					if(xy[0] == endX && xy[1] == endY) { //reached end coordinates
-						break;
-					}
+					findNext = false;
 					
-					if(grid[xy[0]][xy[1]].getType() == "ammeter") {
-						((Ammeter)grid[xy[0]][xy[1]]).setCurrent(current);
-					}
-					
-					connections = grid[xy[0]][xy[1]].getConnections();
 					direction = endJunction[2];
 				}
 			}
 			
-			for(int i = 0; i < 4; i++) {
-				if(connections[i] != null) {
-					if(i != reverseDir(direction)) {
-						xy = connections[i];
-						direction = i;
-						break;
-					} 
-				}
-				if(i == 3) { //no where left to go
-					return;
+			if(findNext == true) {
+				for(int i = 0; i < 4; i++) {
+					if(connections[i] != null) {
+						if(i != reverseDir(direction)) {
+							xy = connections[i];
+							direction = i;
+							break;
+						} 
+					}
+					if(i == 3) { //no where left to go
+						return;
+					}
 				}
 			}
 		}
@@ -260,6 +256,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 			
 			int[][] connections = grid[xy[0]][xy[1]].getConnections();
 			
+			boolean findNext = true;
 			if(grid[xy[0]][xy[1]].getType() == "wire") {
 				if(((Wire)grid[xy[0]][xy[1]]).getShape() == "T") { //found junction
 					int[] junctionExits = getTExits(xy[0], xy[1], reverseDir(direction));
@@ -286,24 +283,23 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 						resistance += 1/(1/firstSec + 1/secondSec);
 					}
 					xy = grid[endJunction[0]][endJunction[1]].getConnections()[endJunction[2]];
-					if(xy[0] == endX && xy[1] == endY) { //reached end coordinates
-						break;
-					}
-					connections = grid[xy[0]][xy[1]].getConnections();
+					findNext = false;
 					direction = endJunction[2];
 				}
 			}
 			
-			for(int i = 0; i < 4; i++) {
-				if(connections[i] != null) {
-					if(i != reverseDir(direction)) {
-						xy = connections[i];
-						direction = i;
-						break;
-					} 
-				}
-				if(i == 3) { //no where left to go
-					return -1;
+			if(findNext == true) {
+				for(int i = 0; i < 4; i++) {
+					if(connections[i] != null) {
+						if(i != reverseDir(direction)) {
+							xy = connections[i];
+							direction = i;
+							break;
+						} 
+					}
+					if(i == 3) { //no where left to go
+						return -1;
+					}
 				}
 			}
 		}

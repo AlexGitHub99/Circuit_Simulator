@@ -1,4 +1,5 @@
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 
 import javax.swing.JPanel;
@@ -44,7 +45,10 @@ public class Menu extends JPanel {
 		}
 		g.drawLine(x, y + height, x + width, y + height);
 		
+		
 		int size = width/grid.length;
+		
+		
 		for(int i = 0; i < grid.length; i++) {
 			for(int j = 0; j < grid[0].length; j++) {
 				if(grid[i][j] != null) {
@@ -57,6 +61,18 @@ public class Menu extends JPanel {
 						}
 					}
 				}
+			}
+		}
+		Font prevFont = g.getFont();
+		g.setFont(new Font(g.getFont().getFamily(), Font.PLAIN, size));
+		g.setColor(Color.RED);
+		g.drawString("X", x + 2*(width/grid.length) + 15, y + (height/grid[0].length) + size - 15);
+		g.setFont(prevFont);
+		g.setColor(Color.BLACK);
+		if(selXY != null) {
+			if(selXY[0] == 2 && selXY[1] == 1) {
+				g.setColor(Color.GRAY);
+				g.fillOval(x + 2*(width/grid.length) + size/12, y + 1*(height/grid[0].length) + size/12, size/12, size/12);
 			}
 		}
 	}

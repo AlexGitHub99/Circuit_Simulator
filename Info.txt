@@ -7,5 +7,12 @@ Right Mouse Button - edit resistance and voltage
 "+" - zoom in
 
 Notice: Circuit simulator can find
-resistance and current for almost any
-ONE BATTERY circuit
+resistance and current for only
+ONE BATTERY circuits
+
+Any combination of series and parallel
+circuits will work, however wheatstone-
+bridge type circuits will not work
+
+The ammeter can be placed in any part
+of the circuit and will find current
