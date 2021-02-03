@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -204,8 +205,8 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 						} else {
 							resistance = 1/(1/firstSec + 1/secondSec);
 							nextVoltage = current*resistance;
-							firstSecCurrent = voltage/firstSec;
-							secondSecCurrent = voltage/secondSec;
+							firstSecCurrent = nextVoltage/firstSec;
+							secondSecCurrent = nextVoltage/secondSec;
 						}
 						
 					}

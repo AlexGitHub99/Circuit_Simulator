@@ -55,8 +55,15 @@ public class Menu extends JPanel {
 		for(int i = 0; i < grid.length; i++) {
 			for(int j = 0; j < grid[0].length; j++) {
 				if(grid[i][j] != null) {
+					if(selXY != null) {
+						if(selXY[0] == i && selXY[1] == j) {
+							g.setColor(Color.PINK);
+							g.fillRect(x + i*(width/grid.length), y + j*(height/grid[0].length), (width/grid.length), (height/grid[0].length));
+						}
+					}
 					g.setColor(Color.BLACK);
 					grid[i][j].customPaint(g, x + i*(width/grid.length) + 10, y + j*(height/grid[0].length) + 10, size - 20);
+					g.drawString(grid[i][j].getType(), x + i*(width/grid.length) + 3, y + (j + 1)*(height/grid[0].length) - 3);
 					if(selXY != null) {
 						if(selXY[0] == i && selXY[1] == j) {
 							g.setColor(Color.GRAY);
@@ -64,6 +71,12 @@ public class Menu extends JPanel {
 						}
 					}
 				}
+			}
+		}
+		if(selXY != null) {
+			if(selXY[0] == DELETE_X && selXY[1] == DELETE_Y) {
+				g.setColor(Color.PINK);
+				g.fillRect(x + DELETE_X*(width/grid.length), y + DELETE_Y*(height/grid[0].length), (width/grid.length), (height/grid[0].length));
 			}
 		}
 		Font prevFont = g.getFont();
@@ -78,6 +91,8 @@ public class Menu extends JPanel {
 				g.fillOval(x + DELETE_X*(width/grid.length) + size/12, y + DELETE_Y*(height/grid[0].length) + size/12, size/12, size/12);
 			}
 		}
+		g.setColor(Color.BLACK);
+		g.drawString("delete", x + DELETE_X*(width/grid.length) + 3, y + (DELETE_Y + 1)*(height/grid[0].length) - 3);
 	}
 	
 	public CircuitElement[][] getGrid() {
