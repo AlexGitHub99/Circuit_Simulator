@@ -1,6 +1,11 @@
 import java.awt.Graphics;
+import java.io.Serializable;
 
-public class CircuitElement {
+public class CircuitElement implements Serializable{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6940282600071887061L;
 	int rotation;
 	String type;
 	

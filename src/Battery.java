@@ -1,8 +1,13 @@
 import java.awt.Font;
 import java.awt.Graphics;
+import java.io.Serializable;
 
-public class Battery extends CircuitElement {
+public class Battery extends CircuitElement implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7176335734866798262L;
 	double voltage;
 	
 	public Battery(double newVoltage, int newRotation) {

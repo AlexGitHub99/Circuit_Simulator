@@ -24,9 +24,15 @@ public class Screen extends JPanel {
 	}
 	
 	public void paint(Graphics g) {
+		//draw white background
 		g.setColor(Color.WHITE);
 		g.fillRect(0, 0, width, height);
 		
+		//draw gray background for menu
+		g.setColor(Color.GRAY);
+		g.fillRect(0, height, width, menuHeight);
+		
+		//draw grid
 		g.setColor(Color.getHSBColor(0.0f, 0.0f, 0.90f));
 		for(int i = 0; i < zoom; i++) {
 			g.drawLine(i*width/zoom, 0, i*width/zoom, height);
@@ -37,6 +43,7 @@ public class Screen extends JPanel {
 
 		}
 		
+		//draw all componenets
 		g.setColor(Color.BLACK);
 		for(int i = 0; i < zoom; i++) {
 			for(int j = 0; j < Math.ceil((double)height/(double)width*zoom); j++) {
@@ -45,6 +52,8 @@ public class Screen extends JPanel {
 				}
 			}
 		}
+		
+		//call menu paint
 		menu.customPaint(g);
 	}
 	

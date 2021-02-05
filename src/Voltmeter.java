@@ -1,7 +1,12 @@
 import java.awt.Graphics;
+import java.io.Serializable;
 
-public class Voltmeter extends CircuitElement {
+public class Voltmeter extends CircuitElement implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1227812265912760735L;
 	double voltage;
 	
 	public Voltmeter(int newRotation) {

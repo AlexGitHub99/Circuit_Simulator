@@ -1,9 +1,6 @@
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Container;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -11,17 +8,26 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
-public class Main implements MouseListener, KeyListener, ActionListener {
+public class Main implements MouseListener, KeyListener, ActionListener{
 	
 	private static final int UP = 0;
 	private static final int RIGHT = 1;
@@ -33,34 +39,39 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 	private static final int MENU_MIDDLE_X = WIDTH/2;
 	private static final int MENU_HEIGHT = 200;
 	private static final int INFO_WIDTH = 300;
+	private static final int TEXT_AREA_HEIGHT = 500;
 	private static final int VARIABLE_HEIGHT = 50;
 	private static final int GRID_WIDTH = 100;
 	private static final int GRID_HEIGHT = 100;
 	private static final int ZOOM = 10;
 	JFrame frame = new JFrame("Circuit Board");
 	Screen screen = new Screen(WIDTH, HEIGHT, MENU_MIDDLE_X, MENU_HEIGHT);
-	Container info = new Container();
-	Container variableEntry = new Container();
+	JPanel info = new JPanel();
+	JPanel variableEntry = new JPanel();
 	JTextField textField = new JTextField();
 	JLabel variable = new JLabel();
 	JButton setValueButton = new JButton();
+	JButton saveButton = new JButton();
+	JButton loadButton = new JButton();
 	JTextArea textArea = new JTextArea();
 	CircuitElement selected;
 	CircuitElement editing;
 	CircuitElement[][] grid = new CircuitElement[GRID_WIDTH][GRID_HEIGHT]; //will store wires and circuit components
 	
 	public Main() {
+		//GUI setup
 		frame.setLayout(new BorderLayout());
 		frame.addKeyListener(this);
 		screen.addMouseListener(this);
 		screen.setZoom(ZOOM);
-		info.setLayout(new GridLayout(2, 1));
-		info.setPreferredSize(new Dimension(INFO_WIDTH, VARIABLE_HEIGHT));
+		info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
 		variableEntry.setLayout(null);
-		variableEntry.setBackground(Color.RED);
-		textField.setBounds(INFO_WIDTH/2, 0, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
-		variable.setBounds(0, 0, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
-		setValueButton.setBounds(INFO_WIDTH/2, VARIABLE_HEIGHT/2, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
+		variableEntry.setBorder(BorderFactory.createLineBorder(Color.RED));
+		variableEntry.setBackground(Color.PINK);
+		variableEntry.setMaximumSize(new Dimension(INFO_WIDTH, VARIABLE_HEIGHT + 20));
+		textField.setBounds(INFO_WIDTH/2, 10, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
+		variable.setBounds(0, 10, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
+		setValueButton.setBounds(INFO_WIDTH/2, VARIABLE_HEIGHT/2 + 10, INFO_WIDTH/2, VARIABLE_HEIGHT/2);
 		String text = "";
 		try {
 			File textFile = new File("info.txt");
@@ -75,10 +86,13 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		}
 		textArea.setText(text);
 		textArea.setEditable(false);
+		textArea.setMaximumSize(new Dimension(INFO_WIDTH, TEXT_AREA_HEIGHT));
 		variableEntry.add(textField);
 		variableEntry.add(variable);
 		variableEntry.add(setValueButton);
 		info.add(textArea);
+		info.add(saveButton);
+		info.add(loadButton);
 		info.add(variableEntry);
 		
 		frame.add(screen, BorderLayout.CENTER);
@@ -87,12 +101,15 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		setValueButton.setText("Set Value");
 		setValueButton.addActionListener(this);
 		variableEntry.setVisible(false);
+		saveButton.setText("Save Circuit");
+		saveButton.addActionListener(this);
+		loadButton.addActionListener(this);
+		loadButton.setText("Load Circuit");
 		frame.setSize(WIDTH + 50 + INFO_WIDTH, HEIGHT + MENU_HEIGHT + 50);
 		frame.setVisible(true);
-		
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		screen.setGrid(grid);
 		screen.repaint();
-//		run();
 	}
 	
 	public static void main(String[] args) {
@@ -104,19 +121,19 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		}
 	}
 	
-	public void updateCircuits() {
+	public void updateCircuits() { //find all batteries and update each of their circuits with updateBattery
 		ArrayList<int[]> batteries = findBatteries();
 		for(int i = 0; i < batteries.size(); i++) {
 			updateBattery(batteries.get(i)[0], batteries.get(i)[1]);
 		}
 	}
 	
-	public ArrayList<int[]> findBatteries() {
+	public ArrayList<int[]> findBatteries() { //find all batteries and return them in an array list
 		ArrayList<int[]> batteries = new ArrayList<int[]>();
 		for(int i = 0; i < GRID_WIDTH; i++ ) {
 			for(int j = 0; j < GRID_HEIGHT; j++ ) {
 				if(grid[i][j] != null) {
-					if(grid[i][j].getType() == "battery") {
+					if(grid[i][j].getType().equals("battery")) {
 						int[] pos = {i, j};
 						batteries.add(pos);
 					}
@@ -126,64 +143,68 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		return batteries;
 	}
 	
-	public void updateBattery(int x, int y) {
-		if(grid[x][y].getType() != "battery") {
+	public void updateBattery(int x, int y) { //update the circuit this battery is connected to
+		if(!grid[x][y].getType().equals("battery")) {
 			return;
 		}
 		Battery battery = (Battery)grid[x][y];
-		if(battery.getRotation() == UP || battery.getRotation() == DOWN) {
+		if(battery.getRotation() == UP || battery.getRotation() == DOWN) { //verticle
 			double resistance = calcResistance(x, y, x, y, UP);
 			if(resistance == -1) {
 				return;
 			}
-			double current = battery.getVoltage()/resistance;
+			double current = battery.getVoltage()/resistance; //calc starting current
 			
 			updateAmmeters(x, y, x, y, UP, current);
 			updateVoltmeters(x, y, x, y, UP, battery.getVoltage(), current);
-		} else { //rotation is RIGHT or LEFT
+		} else { //rotation is RIGHT or LEFT (horizontal)
 			double resistance = calcResistance(x, y, x, y, RIGHT);
 			if(resistance == -1) {
 				return;
 			}
-			double current = battery.getVoltage()/resistance;
+			double current = battery.getVoltage()/resistance; //calc starting current
 			updateAmmeters(x, y, x, y, RIGHT, current);
 			updateVoltmeters(x, y, x, y, RIGHT, battery.getVoltage(), current);
 		}
 	}
 	
+	//update voltmeters recursively within a section of wire denoted by a start and end position, and direction to start
 	public void updateVoltmeters(int startX, int startY, int endX, int endY, int startDirection, double voltage, double current) {
-		if(grid[startX][startY].getType() == "voltmeter") {
+		if(grid[startX][startY].getType().equals("voltmeter")) { //set voltmeter to current voltage
 			((Voltmeter)grid[startX][startY]).setVoltage(voltage);
 		}
 		
 		int[] xy = grid[startX][startY].getConnections()[startDirection];
 		
 		int direction = startDirection;
+		//main iteration loop
 		while(true) {
 			if(xy[0] == endX && xy[1] == endY) { //reached end coordinates
 				break;
 			}
 			
-			if(grid[xy[0]][xy[1]].getType() == "voltmeter") {
+			if(grid[xy[0]][xy[1]].getType().equals("voltmeter")) { //set voltmeter to current voltage
 				((Voltmeter)grid[xy[0]][xy[1]]).setVoltage(voltage);
 			}
 			
 			int[][] connections = grid[xy[0]][xy[1]].getConnections();
 			
 			boolean findNext = true;
-			if(grid[xy[0]][xy[1]].getType() == "wire") {
-				if(((Wire)grid[xy[0]][xy[1]]).getShape() == "T") { //found junction
+			if(grid[xy[0]][xy[1]].getType().equals("wire")) {
+				if(((Wire)grid[xy[0]][xy[1]]).getShape().equals("T")) { //found junction
 					int[] junctionExits = getTExits(xy[0], xy[1], reverseDir(direction));
 					
 					if(junctionExits == null) {
 						return;
 					}
 					
+					//find end junction
 					int[] endJunction = findJunction(null, xy[0], xy[1], xy[0], xy[1], endX, endY, junctionExits[0]);
 					if(endJunction == null) {
 						return;
 					}
 					
+					//calculate resistances of both sections
 					double firstSec = calcResistance(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[0]);
 					double secondSec = calcResistance(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[1]);
 					if(firstSec == -1 || secondSec == -1) {
@@ -194,15 +215,15 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 					double resistance;
 					double firstSecCurrent;
 					double secondSecCurrent;
-					if(firstSec == 0 || secondSec == 0) {
+					if(firstSec == 0 || secondSec == 0) { //direct path, current will be the same and voltage will be 0
 						firstSecCurrent = current;
 						secondSecCurrent = current;
 						nextVoltage = 0;
 					} else {
-						if(firstSec == Double.POSITIVE_INFINITY && secondSec == Double.POSITIVE_INFINITY) {
+						if(firstSec == Double.POSITIVE_INFINITY && secondSec == Double.POSITIVE_INFINITY) { //if resistance is infinite current is 0
 							firstSecCurrent = 0;
 							secondSecCurrent = 0;
-						} else {
+						} else { //find voltage and current based on resistance and current current
 							resistance = 1/(1/firstSec + 1/secondSec);
 							nextVoltage = current*resistance;
 							firstSecCurrent = nextVoltage/firstSec;
@@ -210,8 +231,10 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 						}
 						
 					}
+					//recurse on each section
 					updateVoltmeters(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[0], nextVoltage, firstSecCurrent);
 					updateVoltmeters(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[1], nextVoltage, secondSecCurrent);
+					//skip to end junction
 					xy = grid[endJunction[0]][endJunction[1]].getConnections()[endJunction[2]];
 					findNext = false;
 					
@@ -219,6 +242,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				}
 			}
 			
+			//get next connection and go there
 			if(findNext == true) {
 				for(int i = 0; i < 4; i++) {
 					if(connections[i] != null) {
@@ -236,39 +260,42 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		}
 	}
 	
+	//update ammeters recursively within a section of wire denoted by a start and end position, and direction to start
 	public void updateAmmeters(int startX, int startY, int endX, int endY, int startDirection, double current) {
-		if(grid[startX][startY].getType() == "ammeter") {
+		if(grid[startX][startY].getType().equals("ammeter")) { //set ammeter to current current
 			((Ammeter)grid[startX][startY]).setCurrent(current);
 		}
 		
 		int[] xy = grid[startX][startY].getConnections()[startDirection];
 		
 		int direction = startDirection;
+		//main iteration loop
 		while(true) {
 			if(xy[0] == endX && xy[1] == endY) { //reached end coordinates
 				break;
 			}
 			
-			if(grid[xy[0]][xy[1]].getType() == "ammeter") {
+			if(grid[xy[0]][xy[1]].getType().equals("ammeter")) { //set ammeter to current current
 				((Ammeter)grid[xy[0]][xy[1]]).setCurrent(current);
 			}
 			
 			int[][] connections = grid[xy[0]][xy[1]].getConnections();
 			
 			boolean findNext = true;
-			if(grid[xy[0]][xy[1]].getType() == "wire") {
-				if(((Wire)grid[xy[0]][xy[1]]).getShape() == "T") { //found junction
+			if(grid[xy[0]][xy[1]].getType().equals("wire")) {
+				if(((Wire)grid[xy[0]][xy[1]]).getShape().equals("T")) { //found junction
 					int[] junctionExits = getTExits(xy[0], xy[1], reverseDir(direction));
 					
 					if(junctionExits == null) {
 						return;
 					}
-					
+					//find matching junction
 					int[] endJunction = findJunction(null, xy[0], xy[1], xy[0], xy[1], endX, endY, junctionExits[0]);
 					if(endJunction == null) {
 						return;
 					}
 					
+					//get resistance for both sections
 					double firstSec = calcResistance(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[0]);
 					double secondSec = calcResistance(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[1]);
 					if(firstSec == -1 || secondSec == -1) {
@@ -278,15 +305,16 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 					double resistance;
 					double firstSecCurrent;
 					double secondSecCurrent;
-					if(firstSec == 0 || secondSec == 0) {
+					if(firstSec == 0 || secondSec == 0) { //keep current current
 						firstSecCurrent = current;
 						secondSecCurrent = current;
-					} else {
+					} else { //calculate new current based on current current and resistance/voltage
 						resistance = 1/(1/firstSec + 1/secondSec);
 						double voltage = current*resistance;
 						firstSecCurrent = voltage/firstSec;
 						secondSecCurrent = voltage/secondSec;
 					}
+					//recursively call on each section
 					updateAmmeters(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[0], firstSecCurrent);
 					updateAmmeters(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[1], secondSecCurrent);
 					xy = grid[endJunction[0]][endJunction[1]].getConnections()[endJunction[2]];
@@ -296,6 +324,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				}
 			}
 			
+			//get next connection and go there
 			if(findNext == true) {
 				for(int i = 0; i < 4; i++) {
 					if(connections[i] != null) {
@@ -313,6 +342,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		}
 	}
 	
+	//find resistance recursively in a section (parallel or series) denoted by start and end positions and start direction
 	public double calcResistance(int startX, int startY, int endX, int endY, int startDirection) {
 		double resistance = 0;
 		
@@ -323,25 +353,27 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 			return -1;
 		}
 		
-		if((startX == endX && startY == endY) == false) {
-			if(grid[startX][startY].getType() == "resistor") {
+		//in case the start and end and not the same, add resistor at the start if there is one
+		if((startX == endX && startY == endY) == false) { 
+			if(grid[startX][startY].getType().equals("resistor")) { //add resistance of this resistor
 				resistance += ((Resistor)grid[startX][startY]).getResistance();
 			}
 		}
 		
-		if(grid[startX][startY].getType() == "voltmeter") {
+		if(grid[startX][startY].getType().equals("voltmeter")) { //voltmeters have infinite resistance (ideally)
 			resistance = Double.POSITIVE_INFINITY;
 		}
 		
 		int[] xy = grid[startX][startY].getConnections()[startDirection];
 		
 		int direction = startDirection;
+		//main iteration loop
 		while(true) {
-			if(grid[xy[0]][xy[1]].getType() == "resistor") { //add resistance
+			if(grid[xy[0]][xy[1]].getType().equals("resistor")) { //add resistance
 				resistance += ((Resistor)grid[xy[0]][xy[1]]).getResistance();
 			}
 			
-			if(grid[xy[0]][xy[1]].getType() == "voltmeter") {
+			if(grid[xy[0]][xy[1]].getType().equals("voltmeter")) {
 				resistance = Double.POSITIVE_INFINITY;
 			}
 			
@@ -352,39 +384,44 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 			int[][] connections = grid[xy[0]][xy[1]].getConnections();
 			
 			boolean findNext = true;
-			if(grid[xy[0]][xy[1]].getType() == "wire") {
-				if(((Wire)grid[xy[0]][xy[1]]).getShape() == "T") { //found junction
+			if(grid[xy[0]][xy[1]].getType().equals("wire")) {
+				if(((Wire)grid[xy[0]][xy[1]]).getShape().equals("T")) { //found junction
 					int[] junctionExits = getTExits(xy[0], xy[1], reverseDir(direction));
 					
 					if(junctionExits == null) {
 						return -1;
 					}
+					//find matching junction
 					int[] endJunction = findJunction(null, xy[0], xy[1], xy[0], xy[1], endX, endY, junctionExits[0]);
 					if(endJunction == null) {
 						return -1;
 					}
-					if(endJunction.length != 3) {
+					//end Junction should have a 3rd array value that gives exit direction, if not, findJuntion failed
+					if(endJunction.length != 3) { 
 						return -1;
 					}
 					
+					//calculate resistance recursively for both sections
 					double firstSec = calcResistance(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[0]);
 					double secondSec = calcResistance(xy[0], xy[1], endJunction[0], endJunction[1], junctionExits[1]);
 					if(firstSec == -1 || secondSec == -1) {
 						return -1;
 					}
-					if(firstSec == 0 || secondSec == 0) {
+					//if either is 0 there's a direct path and so the total resistance is effectively 0
+					if(firstSec == 0 || secondSec == 0) { 
 						resistance += 0;
 					} else if(firstSec == Double.POSITIVE_INFINITY && secondSec == Double.POSITIVE_INFINITY) {
 						resistance = Double.POSITIVE_INFINITY;
 					} else {
-						resistance += 1/(1/firstSec + 1/secondSec);
+						resistance += 1/(1/firstSec + 1/secondSec); //if one sections i infinity 1/section will be 0
 					}
-					xy = grid[endJunction[0]][endJunction[1]].getConnections()[endJunction[2]];
+					xy = grid[endJunction[0]][endJunction[1]].getConnections()[endJunction[2]]; //skip to end junction
 					findNext = false;
 					direction = endJunction[2];
 				}
 			}
-			
+				
+			//get connected component and go to it
 			if(findNext == true) {
 				for(int i = 0; i < 4; i++) {
 					if(connections[i] != null) {
@@ -404,8 +441,9 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		return resistance;
 	}
 	
+	//Finds the matching junction in a parallel circuit (wheatstone-bridge type circuits won't work)
 	public int[] findJunction(ArrayList<int[]> prevJunctions, int junctionX, int junctionY, int startX, int startY, int endX, int endY, int startDirection) {
-		if(prevJunctions == null) {
+		if(prevJunctions == null) { //true if on first function call
 			prevJunctions = new ArrayList<int[]>();
 		}
 		if(grid[startX][startY] == null) {
@@ -420,6 +458,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		int[] xy = grid[startX][startY].getConnections()[startDirection];
 		int direction = startDirection;
 		
+		//main loop that steps through each tile of the circuit
 		while(true) {
 			int[][] connections = grid[xy[0]][xy[1]].getConnections();
 			
@@ -427,14 +466,15 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				return xy;
 			}
 			
-			if(grid[xy[0]][xy[1]].getType() == "wire") {
-				if(((Wire)grid[xy[0]][xy[1]]).getShape() == "T") {
+			if(grid[xy[0]][xy[1]].getType().equals("wire")) {
+				if(((Wire)grid[xy[0]][xy[1]]).getShape().equals("T")) { //at junction
 					if(searchArrayList(prevJunctions, xy) == true) { //already been at this junction
 						return null;
 					}
 					if(xy[0] == junctionX && xy[1] == junctionY) { //looped back to original junction
 						return xy;
 					}
+					//get junction connections
 					int counter = -1;
 					int clockwise = -1;
 					for(int i = 0; i < 4; i++) {
@@ -454,6 +494,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 					}
 					
 					prevJunctions.add(xy);
+					//find matching junction for this junction
 					int[] branch1 = findJunction(prevJunctions, junctionX, junctionY, xy[0], xy[1], endX, endY, counter);
 					int[] branch2 = findJunction(prevJunctions, junctionX, junctionY, xy[0], xy[1], endX, endY, clockwise);
 					if(branch1 != null && branch2 != null) {
@@ -470,9 +511,9 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 								return xyd;
 							}
 						}
-					} else if(branch1 != null) {
+					} else if(branch1 != null) { //either found the end or the junction
 						return branch1;
-					} else if(branch2 != null) {
+					} else if(branch2 != null) { //either found the end or the junction
 						return branch2;
 					}
 				}
@@ -495,57 +536,22 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		}
 	}
 	
-//	public int[] findJunction(int startX, int startY, int startDirection) {
-//		if(grid[startX][startY] == null) {
-//			return null;
-//		}
-//		if(grid[startX][startY].getConnections()[startDirection] == null) {
-//			return null;
-//		}
-//		
-//		int[] xy = grid[startX][startY].getConnections()[startDirection];
-//		
-//		int direction = startDirection;
-//		while(true) {
-//			if(grid[xy[0]][xy[1]].getType() == "wire") {
-//				if(((Wire)grid[xy[0]][xy[1]]).getShape() == "T") {
-//					int[] xyd = {xy[0], xy[1], reverseDir(direction)};
-//					return xyd;
-//				}
-//			}
-//			
-//			int[][] connections = grid[xy[0]][xy[1]].getConnections();
-//			
-//			for(int i = 0; i < 4; i++) {
-//				if(connections[i] != null) {
-//					if(i != reverseDir(direction)) {
-//						xy = connections[i];
-//						direction = i;
-//						break;
-//					} 
-//				}
-//				if(i == 3) {
-//					return null;
-//				}
-//			}
-//		}
-//	}
-	
-	public int[] getTExits(int x, int y, int prevDirection) {
-		if(grid[x][y].getType() != "wire") {
+	public int[] getTExits(int x, int y, int prevDirection) { //return TWO t exits excluding the given direction
+		if(!grid[x][y].getType().equals("wire")) {  //must be wire
 			return null;
 		} else {
-			if(((Wire)grid[x][y]).getShape() != "T") {
+			if(!((Wire)grid[x][y]).getShape().equals("T")) { //must be T wire
 				return null;
 			}
 		}
 		int[][] connections = grid[x][y].getConnections();
 		int[] exits = {-1, -1}; //exits go from less clockwise to more clockwise
 		
+		//iterate through directions and check if each is a valid exit
 		int i = (grid[x][y].getRotation() + 2) % 4;
 		while(i != (grid[x][y].getRotation() + 1) % 4) {
 			if(connections[i] != null) {
-				if(i != prevDirection) {
+				if(i != prevDirection) { //exit must not be the previous direction
 					if(exits[0] == -1) {
 					exits[0] = i;
 					} else {
@@ -559,13 +565,13 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				i = 0;
 			}
 		}
-		if(exits[0] == -1 || exits[1] == -1) {
+		if(exits[0] == -1 || exits[1] == -1) { //missing connection
 			return null;
 		}
 		return exits;
 	}
 	
-	public boolean searchArrayList(ArrayList<int[]> arrayList, int[] values) {
+	public boolean searchArrayList(ArrayList<int[]> arrayList, int[] values) { //search in an arraylist for a given value (.contains doesn't work ?)
 		for(int i = 0; i < arrayList.size(); i++) {
 			if(compareArrays(arrayList.get(i), values) == true) {
 				return true;
@@ -575,7 +581,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		
 	}
 	
-	public boolean compareArrays(int[] array1, int[] array2) {
+	public boolean compareArrays(int[] array1, int[] array2) { //compare 2 int arrays of same size and return true if identical
 		if(array2.length != array1.length) {
 			return false;
 		}
@@ -612,10 +618,8 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 	public void mousePressed(MouseEvent e) {
 		// TODO Auto-generated method stub
 		frame.requestFocus();
-		if(e.getX() > WIDTH - 10) { //temporary
-			int[] xy = findJunction(null, 2, 2, 2, 2, 9, 2, RIGHT);
-			System.out.println(xy[0] + " " + xy[1]);
-		} else if(e.getY() > HEIGHT) {
+		if(e.getY() > HEIGHT) { //mouse in menu area
+			//select componenet in menu for placing ong rid
 			Menu menu = screen.getMenu();
 			int menuX = e.getX() - MENU_MIDDLE_X + menu.getWidth()/2;
 			int menuY = e.getY() - HEIGHT;
@@ -625,17 +629,17 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				selected = menu.getGrid()[gridX][gridY];
 				menu.setSelected(gridX, gridY);
 			}
-			if(e.getButton() == MouseEvent.BUTTON1) {
+			if(e.getButton() == MouseEvent.BUTTON1) { //left mouse button
 				variableEntry.setVisible(false);
 				editing = null;
-			} else if(e.getButton() == MouseEvent.BUTTON3) {
+			} else if(e.getButton() == MouseEvent.BUTTON3) { //right mouse button
 				if(selected != null) {
-					if(selected.getType() == "battery") {
+					if(selected.getType().equals("battery")) { //edit battery in menu
 						variableEntry.setVisible(true);
 						editing = selected;
 						variable.setText("Voltage");
 						textField.setText(String.valueOf(((Battery)selected).getVoltage()));
-					} else if(selected.getType() == "resistor") {
+					} else if(selected.getType().equals("resistor")) { //select resistor in menu
 						variableEntry.setVisible(true);
 						editing = selected;
 						variable.setText("Resistance");
@@ -643,31 +647,31 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 					}
 				}
 			}
-		} else if (e.getY() < HEIGHT) {
+		} else if (e.getY() < HEIGHT) { //mouse in circuit grid area
 			int gridX = e.getX()/(WIDTH/screen.getZoom());
 			int gridY = (int)((double)e.getY()/((double)HEIGHT/screen.getYSize()));
-			if(e.getButton() == MouseEvent.BUTTON1) {
+			if(e.getButton() == MouseEvent.BUTTON1) { //left mouse button
 				variableEntry.setVisible(false);
 				editing = null;
 				if(selected != null) {
-					if(selected.getType() == "wire") {
+					if(selected.getType().equals("wire")) { //place wire
 						Wire selectedWire = (Wire)selected;
 						Wire wire = new Wire(selectedWire.getShape(), selectedWire.getRotation());
 						grid[gridX][gridY] = wire;
-					} else if(selected.getType() == "battery") {
+					} else if(selected.getType().equals("battery")) { //place battery
 						Battery selectedBattery = (Battery)selected;
 						Battery battery = new Battery(selectedBattery.getVoltage(), selectedBattery.getRotation());
 						grid[gridX][gridY] = battery;
 						setConnections(gridX, gridY);
-					} else if(selected.getType() == "resistor") {
+					} else if(selected.getType().equals("resistor")) { //place resistor
 						Resistor selectedResistor = (Resistor)selected;
 						Resistor resistor = new Resistor(selectedResistor.getResistance(), selectedResistor.getRotation());
 						grid[gridX][gridY] = resistor;
-					} else if(selected.getType() == "ammeter") {
+					} else if(selected.getType().equals("ammeter")) { //place ammeter
 						Ammeter selectedAmmeter = (Ammeter)selected;
 						Ammeter ammeter = new Ammeter(selectedAmmeter.getRotation());
 						grid[gridX][gridY] = ammeter;
-					} else if(selected.getType() == "voltmeter") {
+					} else if(selected.getType().equals("voltmeter")) { //place voltmeter
 						Voltmeter selectedVoltmeter = (Voltmeter)selected;
 						Voltmeter voltmeter = new Voltmeter(selectedVoltmeter.getRotation());
 						grid[gridX][gridY] = voltmeter;
@@ -677,14 +681,14 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				}
 				setConnections(gridX, gridY);
 				updateCircuits();
-			} else if(e.getButton() == MouseEvent.BUTTON3) {
+			} else if(e.getButton() == MouseEvent.BUTTON3) { //right mousde button
 				if(grid[gridX][gridY] != null) {
-					if(grid[gridX][gridY].getType() == "battery") {
+					if(grid[gridX][gridY].getType().equals("battery")) { //select battery
 						variableEntry.setVisible(true);
 						editing = grid[gridX][gridY];
 						variable.setText("Voltage");
 						textField.setText(String.valueOf(((Battery)grid[gridX][gridY]).getVoltage()));
-					} else if(grid[gridX][gridY].getType() == "resistor") {
+					} else if(grid[gridX][gridY].getType().equals("resistor")) { //select resistor
 						variableEntry.setVisible(true);
 						editing = grid[gridX][gridY];
 						variable.setText("Resistance");
@@ -696,7 +700,8 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		screen.repaint();
 	}
 
-	public void setConnections(int x, int y) {
+	//update connections for given component at x,y AND all components it's connected to
+	public void setConnections(int x, int y) { 
 		int[] xy = {x, y};
 		if(grid[x][y] == null) {
 			if(y > 0) {
@@ -742,7 +747,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		}
 	}
 	
-	public boolean testDirection(int direction, int x, int y) { 
+	public boolean testDirection(int direction, int x, int y) { //test if component has a connection in this direction
 		if(x < 0 || y < 0) {
 			return false;
 		}
@@ -756,13 +761,13 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 		if(grid[x][y].getRotation() == direction) {
 			return true;
 		} else { //test side connect (L and T wires)
-			if(grid[x][y].getType() == "wire") {
+			if(grid[x][y].getType().equals("wire")) {
 				Wire wire = (Wire)grid[x][y];
-				if(wire.getShape() == "L" || wire.getShape() == "T") {
+				if(wire.getShape().equals("L") || wire.getShape().equals("T")) {
 					possibleDirection = (direction + 1) % 4;
 					if(wire.getRotation() == possibleDirection) {
 						return true;
-					} else if(wire.getShape() == "L") {
+					} else if(wire.getShape().equals("L")) {
 						return false;
 					}
 				}
@@ -792,7 +797,7 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_R) {
+		if(e.getKeyCode() == KeyEvent.VK_R) { //rotate
 			if(selected != null) {
 				int newRotation;
 				int oldRotation = selected.getRotation();
@@ -804,10 +809,10 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				selected.setRotation(newRotation);
 				screen.repaint();
 			}
-		} else if(e.getKeyCode() == KeyEvent.VK_EQUALS) {
+		} else if(e.getKeyCode() == KeyEvent.VK_EQUALS) { //zoom in
 			screen.setZoom(screen.getZoom() - 1);
 			screen.repaint();
-		} else if(e.getKeyCode() == KeyEvent.VK_MINUS) {
+		} else if(e.getKeyCode() == KeyEvent.VK_MINUS) { //zoom out
 			screen.setZoom(screen.getZoom() + 1);
 			screen.repaint();
 		}
@@ -822,15 +827,15 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if(e.getSource() == setValueButton) {
+		if(e.getSource() == setValueButton) { //set value of component stored by "editing" variable
 			boolean failed = false;
-			if(editing.getType() == "resistor") {
+			if(editing.getType().equals("resistor")) {
 				try {
 				((Resistor)editing).setResistance(Double.parseDouble(textField.getText()));
 				} catch(NumberFormatException error) {
 					failed = true;
 				}
-			} else if(editing.getType() == "battery") {
+			} else if(editing.getType().equals("battery")) {
 				try {
 				((Battery)editing).setVoltage(Double.parseDouble(textField.getText()));
 				} catch(NumberFormatException error) {
@@ -842,6 +847,67 @@ public class Main implements MouseListener, KeyListener, ActionListener {
 				editing = null;
 			}
 			updateCircuits();
+			screen.repaint();
+			frame.requestFocus();
+		} else if(e.getSource() == saveButton) { //save file
+			try {
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+				int val = fileChooser.showSaveDialog(frame);
+				if(val == JFileChooser.APPROVE_OPTION) {
+					File file = fileChooser.getSelectedFile();
+					FileOutputStream fileOut = new FileOutputStream(file);
+					ObjectOutputStream out = new ObjectOutputStream(fileOut);
+					out.writeObject(grid);
+					out.close();
+					fileOut.close();
+				}
+				
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			frame.requestFocus();
+		} else if(e.getSource() == loadButton) { //load file
+			try {
+				JFileChooser fileChooser = new JFileChooser();
+				fileChooser.setCurrentDirectory(new File(System.getProperty("user.dir")));
+				int val = fileChooser.showOpenDialog(frame);
+				if(val == JFileChooser.APPROVE_OPTION) {
+					File file = fileChooser.getSelectedFile();
+					FileInputStream fileIn = new FileInputStream(file);
+					ObjectInputStream in = new ObjectInputStream(fileIn);
+					grid = null;
+					grid = (CircuitElement[][]) in.readObject();
+					screen.setGrid(grid);
+					int edgeX = 0;
+					int edgeY = 0;
+					for(int i = 0; i < grid.length; i++) {
+						for(int j = 0; j < grid[0].length; j++) {
+							if(grid[i][j] != null) {
+								if(i > edgeX) {
+									edgeX = i;
+								}
+								if(j > edgeY) {
+									edgeY = j;
+								}
+							}
+						}
+					}
+					//set zoom to be larger than circuit edges
+					if(edgeX > ZOOM && edgeX > edgeY) {
+						screen.setZoom(edgeX + 1);
+					} else if(edgeY > (Math.ceil((double)HEIGHT/(double)WIDTH*ZOOM)) && edgeY > edgeX) {
+						screen.setZoom((int)((double)edgeY*(double)WIDTH/(double)HEIGHT) + 2);
+					}
+					in.close();
+					fileIn.close();
+				}
+				
+			} catch (IOException | ClassNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			screen.repaint();
 			frame.requestFocus();
 		}

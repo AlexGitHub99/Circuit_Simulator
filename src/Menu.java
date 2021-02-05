@@ -4,6 +4,7 @@ import java.awt.Graphics;
 
 import javax.swing.JPanel;
 
+@SuppressWarnings("serial")
 public class Menu extends JPanel {
 	int width;
 	int height;
@@ -24,6 +25,7 @@ public class Menu extends JPanel {
 		x = newXMiddle - width/2;
 		y = newY;
 		selXY = null;
+		//set menu slots
 		grid[0][0] = new Wire("line", UP);
 		grid[1][0] = new Wire("L", UP);
 		grid[2][0] = new Wire("T", UP);
@@ -34,9 +36,11 @@ public class Menu extends JPanel {
 	}
 	
 	public void customPaint(Graphics g) {
+		//draw menu color
 		g.setColor(Color.getHSBColor(0, 0, (float) 0.95));
 		g.fillRect(x, y, width, height);
 		
+		//draw grid
 		g.setColor(Color.RED);
 		for(int i = 0; i < grid.length; i++) {
 			g.drawLine(x + i*(width/grid.length), y, x + i*(width/grid.length), y + height);
@@ -51,7 +55,7 @@ public class Menu extends JPanel {
 		
 		int size = width/grid.length;
 		
-		
+		//draw menu componenets, selection, and text
 		for(int i = 0; i < grid.length; i++) {
 			for(int j = 0; j < grid[0].length; j++) {
 				if(grid[i][j] != null) {
@@ -73,6 +77,8 @@ public class Menu extends JPanel {
 				}
 			}
 		}
+		
+		//draw delete square, text, and selection
 		if(selXY != null) {
 			if(selXY[0] == DELETE_X && selXY[1] == DELETE_Y) {
 				g.setColor(Color.PINK);

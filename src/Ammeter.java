@@ -1,7 +1,12 @@
 import java.awt.Graphics;
+import java.io.Serializable;
 
-public class Ammeter extends CircuitElement {
+public class Ammeter extends CircuitElement implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -4622561594738124275L;
 	double current;
 	
 	public Ammeter(int newRotation) {

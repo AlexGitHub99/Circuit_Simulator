@@ -1,8 +1,13 @@
 import java.awt.Font;
 import java.awt.Graphics;
+import java.io.Serializable;
 
-public class Resistor extends CircuitElement {
+public class Resistor extends CircuitElement implements Serializable{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8696687921354386802L;
 	double resistance;
 	
 	public Resistor(double newResistance, int newRotation) {
